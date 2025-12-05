@@ -1,0 +1,5 @@
+docxtpl
+pyyaml
+python-docx
+customtkinter
+packaging
