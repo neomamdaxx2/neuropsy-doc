@@ -1,0 +1,55 @@
+name: Build Application
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build with PyInstaller (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        # Find customtkinter location
+        CTK_PATH=$(python -c "import customtkinter; import os; print(os.path.dirname(customtkinter.__file__))")
+        echo "CustomTkinter path: $CTK_PATH"
+        
+        # Build
+        pyinstaller --noconfirm --onefile --windowed --name "NeuropsyGen_Linux" --add-data "$CTK_PATH:customtkinter" --hidden-import "docx" --hidden-import "docxtpl" gui.py
+
+    - name: Build with PyInstaller (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Get customtkinter path using python
+        $CTK_PATH = python -c "import customtkinter; import os; print(os.path.dirname(customtkinter.__file__))"
+        Write-Host "CustomTkinter path: $CTK_PATH"
+        
+        # Build
+        pyinstaller --noconfirm --onefile --windowed --name "NeuropsyGen_Windows" --add-data "$CTK_PATH;customtkinter" --hidden-import "docx" --hidden-import "docxtpl" gui.py
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: NeuropsyGen-${{ matrix.os }}
+        path: dist/*
